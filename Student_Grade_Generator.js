@@ -1,7 +1,7 @@
 
 function gradeGenerator (){  
 
-    const readline = require('readline');
+    const readline = require('readline'); // used to init readline command
     const getGrade = () => {
     const read = readline.createInterface({
         input: process.stdin,
@@ -16,7 +16,7 @@ function gradeGenerator (){
     });
 };
 
-getGrade()  
+getGrade()   // event handler
     .then((grade) => {
         if  (grade > 79) {
             return 'Grade: A';
