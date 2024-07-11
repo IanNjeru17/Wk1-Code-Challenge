@@ -1,63 +1,104 @@
+const readline = require('readline');
 
-//prompt
-const basicSalary = parseFloat(prompt("Enter your basic salary:"));
-const benefits = parseFloat(prompt("Enter your benefits:"));
+const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout
+});
 
-const grossSalary = basicSalary + benefits;
-const payee = calculatePAYE(grossSalary);
-const nhif = calculateNHIF(grossSalary);
-const nssf = calculateNSSF(grossSalary);
-const netSalary = grossSalary - (payee + nhif + nssf);
-//calculate paye
-function calculatePAYE(grossSalary) {
-    let payee = 0;
+// calculate Net Salary
+function calculateNetSalary(basicSalary, benefits) {
+    const PAYE_TAX_Limit= [
+        { upperLimit: 24000, rate: 0.1 },
+        { upperLimit: 40667, rate: 0.15 },
+        { upperLimit: 57333, rate: 0.2 },
+        { upperLimit: Infinity, rate: 0.25 }
+    ];
 
-    if (grossSalary <= 24000) {
-        payee = grossSalary * 0.1;
-    } else if (grossSalary <= 32333) {
-        payee = 2400 + (grossSalary - 24000) * 0.25;
-    } else {
-        payee = 2400 + 2083.25 + (grossSalary - 32333) * 0.3;
+    // NHIF Contribution rates
+    const NHIF_CONTRIBUTIONS = [
+        { upperLimit: 5999, amount: 150 },
+        { upperLimit: 7999, amount: 300 },
+        { upperLimit: 11999, amount: 400 },
+        { upperLimit: 14999, amount: 500 },
+        { upperLimit: 19999, amount: 600 },
+        { upperLimit: 24999, amount: 750 },
+        { upperLimit: 29999, amount: 850 },
+        { upperLimit: 34999, amount: 900 },
+        { upperLimit: 39999, amount: 950 },
+        { upperLimit: 44999, amount: 1000 },
+        { upperLimit: 49999, amount: 1100 },
+        { upperLimit: 59999, amount: 1200 },
+        { upperLimit: 69999, amount: 1300 },
+        { upperLimit: 79999, amount: 1400 },
+        { upperLimit: 89999, amount: 1500 },
+        { upperLimit: 99999, amount: 1600 },
+        { upperLimit: Infinity, amount: 1700 }
+    ];
+
+    // NSSF Contribution
+    const NSSF_RATE = 0.06;
+    const NSSF_MAX = 1080; // Maximum NSSF contribution
+
+    // Calculate Gross Salary
+    let grossSalary = basicSalary + benefits;
+
+    // Calculate PAYE (Pay As You Earn) Tax
+    let paye = 0;
+    let remainingSalary = grossSalary;
+
+    for (let band of PAYE_TAX_Limit) {
+        if (remainingSalary > band.upperLimit) {
+            paye += band.upperLimit * band.rate;
+            remainingSalary -= band.upperLimit;
+        } else {
+            paye += remainingSalary * band.rate;
+            break;
+        }
     }
 
-    return payee;
-}
+    // Calculate NHIF Deductions
+    let nhif = 0;
+    for (let band of NHIF_CONTRIBUTIONS) {
+        if (grossSalary <= band.upperLimit) {
+            nhif = band.amount;
+            break;
+        }
+    }
 
-// Function to calculate NHIF Deductions
-function calculateNHIF(grossSalary) {
-    if (grossSalary <= 5999) return 150;
-    if (grossSalary <= 7999) return 300;
-    if (grossSalary <= 11999) return 400;
-    if (grossSalary <= 14999) return 500;
-    if (grossSalary <= 19999) return 600;
-    if (grossSalary <= 24999) return 750;
-    if (grossSalary <= 29999) return 850;
-    if (grossSalary <= 34999) return 900;
-    if (grossSalary <= 39999) return 950;
-    if (grossSalary <= 44999) return 1000;
-    if (grossSalary <= 49999) return 1100;
-    if (grossSalary <= 59999) return 1200;
-    if (grossSalary <= 69999) return 1300;
-    if (grossSalary <= 79999) return 1400;
-    if (grossSalary <= 89999) return 1500;
-    if (grossSalary <= 99999) return 1600;
-    return 1700;
-}
+    // Calculate NSSF Deductions
+    let nssf = Math.min(grossSalary * NSSF_RATE, NSSF_MAX);
 
-// Function to calculate NSSF Deductions
-function calculateNSSF(grossSalary) {
-    return Math.min(grossSalary * 0.06, 1800);
-}
-// Calculate the salary components
-const salaryDetails = calculateNetSalary(basicSalary, benefits);
+    // Calculate Net Salary
+    let netSalary = grossSalary - paye - nhif - nssf;
 
-function calculateNetSalary(basicSalary, benefits) {
-
+    // Return all calculated values
     return {
-        grossSalary,
-        payee,
-        nhif,
-        nssf,
-        netSalary
+        grossSalary: grossSalary,
+        paye: paye,
+        nhif: nhif,
+        nssf: nssf,
+        netSalary: netSalary
     };
 }
+
+// Prompt the user for input
+rl.question('Enter your basic salary: ', (basicSalaryInput) => {
+    const basicSalary = parseFloat(basicSalaryInput);
+
+    rl.question('Enter your benefits: ', (benefitsInput) => {
+        const benefits = parseFloat(benefitsInput);
+
+        // Calculate the net salary and other details
+        const result = calculateNetSalary(basicSalary, benefits);
+
+        // Display the results
+        console.log("Gross Salary:", result.grossSalary);
+        console.log("PAYE:", result.paye);
+        console.log("NHIF:", result.nhif);
+        console.log("NSSF:", result.nssf);
+        console.log("Net Salary:", result.netSalary);
+
+        // Close the readline interface
+        rl.close();
+    });
+});
